@@ -20,7 +20,7 @@ if __name__ == '__main__':
     with ThreadPoolExecutor() as executor:
         # 访问第一页
         page_content = crawler.get_page_content(Settings.BASE_URLS[0])
-        executor.submit(parseJob, page_content)
+        executor.submit(parseJob, crawler, page_content)
 
         query = ""
         # 访问剩下的九页
@@ -28,7 +28,7 @@ if __name__ == '__main__':
             print(f"第{i}页")
             url = Settings.BASE_URLS[1].format(query, i)
             page_content = crawler.get_page_content(url)
-            executor.submit(parseJob, page_content)
+            executor.submit(parseJob, crawler, page_content)
 
     print(
         '结束了')

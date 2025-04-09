@@ -3,7 +3,7 @@ import csv
 import random
 from config.settings import Settings
 
-def parseJob(page_content):
+def parseJob(crawler, page_content):
     jobList = []
     tree = etree.HTML(page_content)
     job = tree.xpath('//div[@class="search-job-result"]/ul/li')
@@ -22,7 +22,7 @@ def parseJob(page_content):
             language = "无要求"
             jobArea = i.xpath(".//span[@class='job-area']/text()")[0]
 
-            treeAdress = parseNewURL(detail_url)
+            treeAdress = parseNewURL(crawler, detail_url)
 
             try:
                 job_desc = ''
@@ -48,12 +48,10 @@ def parseJob(page_content):
                  jobArea, jobAdress, data_lat, salary, education, job_lables])
             print('---------------------------岗位插入成功-----------------:' + job_name)
 
-            treeCompany = parseNewURL(company_url)
+            treeCompany = parseNewURL(crawler, company_url)
             parseCompany(treeCompany)
 
-def parseNewURL(url):
-    from core.crawler import Crawler
-    crawler = Crawler()
+def parseNewURL(crawler, url):
     new_url = Settings.PREFIX_URL + str(url)
     page_text1 = crawler.get_page_content(new_url)
     tree1 = etree.HTML(page_text1)

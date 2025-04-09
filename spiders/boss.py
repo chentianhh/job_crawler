@@ -12,33 +12,43 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from concurrent.futures import ThreadPoolExecutor
 
-# 指定url
+# 指定 url
 urls = ['https://www.zhipin.com/web/geek/job?city=100010000&degree=208,206,202&industry=100901',
-        'https://www.zhipin.com/web/geek/job?city=100010000&degree=208&industry=100901&query={}&page={}']
+        'https://www.zhipin.com/web/geek/job?city=100010000&degree=208,206,202&industry=100901&query={}&page={}']
 prefix = 'https://www.zhipin.com'
 print(
-    "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@正式启动了哦~@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    "正式启动")
 
 chrome_path = r'C:\Program Files\Google\Chrome\Application\chromedriver.exe'
 chrome_options = Options()
-chrome_options.add_argument('--headless')  # 使用Headless模式
-chrome_options.add_argument(
-    'user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
+chrome_options.add_argument('--headless')  # 使用 Headless 模式
 
-# 将executable_path作为options的一部分传递
+# 设置 Clash 代理
+proxy = "127.0.0.1:7890"
+chrome_options.add_argument(f'--proxy-server=http://{proxy}')
+
+# 随机请求头
+user_agents = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0"
+]
+chrome_options.add_argument(f'user-agent={random.choice(user_agents)}')
+
+# 将 executable_path 作为 options 的一部分传递
 bro = webdriver.Chrome(options=chrome_options)
 
 # 设置显式等待，替代隐式等待
 wait = WebDriverWait(bro, 5)
 
 # 岗位信息文件创建
-f_job = open("机械设备/机电/重工岗位+地址.csv", "w", encoding="utf-8_sig", newline="")
+f_job = open("岗位.csv", "w", encoding="utf-8_sig", newline="")
 csv.writer(f_job).writerow(
     ["企业名称", "招聘类型", "职位类型", "职位名称", "招聘人数", "到岗时间", "年龄要求", "语言要求", "岗位描述/详情",
      "区域地址", "工作地址", "经纬度", "薪酬范围", "学历要求", "工作经验要求"])
 
 # 对应岗位信息的文件创建
-f_company = open("机械设备/机电/重工公司的信息.csv", "w", encoding="utf-8_sig", newline="")
+f_company = open("公司.csv", "w", encoding="utf-8_sig", newline="")
 csv.writer(f_company).writerow(["企业名称", "企业logo", "从事行业", "企业规模", "详细地址", "公司介绍", "经纬度"])
 
 
@@ -46,7 +56,7 @@ csv.writer(f_company).writerow(["企业名称", "企业logo", "从事行业", "�
 def parseJob(page_content):
     # 临时存放获取到的信息
     jobList = []
-    # 将从互联网上获取的源码数据加载到tree对象中
+    # 将从互联网上获取的源码数据加载到 tree 对象中
     tree = etree.HTML(page_content)
     job = tree.xpath('//div[@class="search-job-result"]/ul/li')
 
@@ -65,7 +75,7 @@ def parseJob(page_content):
         condition_type = "机械设备/机电/重工"
         # 职位名称
         job_name = i.xpath(".//span[@class='job-name']/text()")[0]
-        # 招聘人数 5以内随机数
+        # 招聘人数 5 以内随机数
         recruit_num = random.randint(1, 4)
         # 到岗时间
         coming_time = "2周内"
@@ -101,7 +111,7 @@ def parseJob(page_content):
         job_lable_list = i.xpath(".//ul[@class='tag-list']//text()")[0]
         job_lables = " ".join(job_lable_list)
 
-        # 将数据写入csv
+        # 将数据写入 csv
         csv.writer(f_job).writerow(
             [company, recruit_type, condition_type, job_name, recruit_num, coming_time, age, language, job_desc,
              jobArea, jobAdress, data_lat, salary, education, job_lables])
@@ -110,11 +120,12 @@ def parseJob(page_content):
         parseCompany(treeCompany)
 
 
-# 根据url地址跳转新链接并获得页面数据
+# 根据 url 地址跳转新链接并获得页面数据
 def parseNewURL(url):
     new_url = prefix + str(url)
     bro.get(new_url)
-    sleep(1)
+    # 随机延迟时间
+    sleep(random.uniform(1, 3))
     page_text1 = bro.page_source
     tree1 = etree.HTML(page_text1)
     return tree1
@@ -124,7 +135,7 @@ def parseNewURL(url):
 def parseCompany(treeCompany):
     # 企业名称
     company_name = treeCompany.xpath(".//h1[@class='name']/text()")[0]
-    # 企业logo
+    # 企业 logo
     company_logo = treeCompany.xpath(".//img[@class='fl']/@src")[0]
 
     # 从事行业
@@ -143,8 +154,9 @@ def parseCompany(treeCompany):
         company_desc = '无'
     # 经纬度
     company_data_lat = treeCompany.xpath(".//div[@class='map-container js-open-detail']/@data-lat")[0]
-    sleep(1)
-    # 将数据写入csv
+    # 随机延迟时间
+    sleep(random.uniform(1, 3))
+    # 将数据写入 csv
     csv.writer(f_company).writerow(
         [company_name, company_logo, industry, company_scale, company_adress, company_desc, company_data_lat])
     print('---------------------------公司数据插入成功-----------------:' + company_name)
@@ -154,7 +166,7 @@ if __name__ == '__main__':
     with ThreadPoolExecutor() as executor:
         # 访问第一页
         bro.get(urls[0])
-        sleep(5)
+        sleep(random.uniform(3, 5))
         page_content = bro.page_source
         executor.submit(parseJob, page_content)
 
@@ -164,11 +176,14 @@ if __name__ == '__main__':
             print(f"第{i}页")
             url = urls[1].format(query, i)
             bro.get(url)
-            sleep(1)
+            sleep(random.uniform(1, 3))
             page_content = bro.page_source
             executor.submit(parseJob, page_content)
 
     print(
-        '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@结束了呢，真是太难了，呼~@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+        '结束了')
     # 关闭浏览器
     bro.quit()
+    f_job.close()
+    f_company.close()
+
